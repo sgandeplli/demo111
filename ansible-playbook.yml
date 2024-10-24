@@ -1,0 +1,15 @@
+- name: Install and start Apache on web servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure Apache is installed
+      yum:
+        name: httpd
+        state: present
+        update_cache: yes
+
+    - name: Start Apache service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
