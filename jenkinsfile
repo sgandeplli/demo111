@@ -1,0 +1,42 @@
+pipeline {
+    agent any
+    environment {
+        GOOGLE_APPLICATION_CREDENTIALS = credentials('gcp-sa')
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/sgandeplli/demo111.git', branch: 'main'
+            }
+        }
+        stage('Terraform Init') {
+            steps {
+                sh 'terraform init'
+            }
+        }
+        stage('Terraform Apply') {
+            steps {
+                script {
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+        stage('Ansible Setup') {
+            steps {
+                script {
+                    // Capture the instance IP from Terraform output
+                    instance_ip = sh(script: 'terraform output -raw instance_ip', returnStdout: true).trim()
+
+                    // Create the inventory file dynamically
+                    writeFile file: 'instance_ip.yml', text: """
+                    [webservers]
+                    ${instance_ip}
+                    """
+
+                    // Run the Ansible playbook
+                    sh "ansible-playbook -i instance_ip.yml ansible-playbook.yml"
+                }
+            }
+        }
+    }
+}
